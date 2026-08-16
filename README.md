@@ -13,17 +13,13 @@ Context7 up-to-date library documentation for DSH.
 
 ## 一键安装
 
-```bash
-dsh plugin --profile web add dsh-context7
-```
-
-或从 GitHub 仓库安装：
+从 GitHub 安装（已验证）：
 
 ```bash
 dsh plugin --profile web add github:Nrxous/dsh-context7
 ```
 
-安装后重启（或热装配）即可使用；工具会在模型需要最新库文档时被自动调用，也可直接提问触发。
+安装后重启 DSH 即生效；工具会在模型需要最新库文档时被自动调用，也可直接提问触发。
 
 ## 本地开发
 
