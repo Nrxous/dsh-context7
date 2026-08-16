@@ -1,0 +1,8 @@
+# dsh-context7 bundle patch: host-only plugin row inserted into the profile
+# roster. Applied as a profile bundle layer (`dsh.bundle.patch` manifest field);
+# `dsh plugin --profile <name> add dsh-context7` registers the dependency and
+# auto-appends this bundle.
+- insert:
+    - id: dsh-context7
+      name: dsh-context7
+      config: {}

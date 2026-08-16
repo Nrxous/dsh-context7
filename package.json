@@ -1,0 +1,40 @@
+{
+  "name": "dsh-context7",
+  "version": "0.1.0",
+  "description": "Context7 up-to-date library documentation for DSH: context7_search / context7_get_docs model tools backed by the Context7 Public API v2 (context7.com).",
+  "private": false,
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-tools": ">=0.0.1-rc <2",
+    "cordis": ">=4.0.0-rc <5"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh-plugin",
+    "context7",
+    "documentation"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Nrxous/dsh-context7.git"
+  }
+}
