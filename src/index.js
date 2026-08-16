@@ -10,10 +10,17 @@
  * Zero runtime dependencies: tool definitions are plain objects registered via
  * ctx.tools.register, and network uses the configured `web` seam when a fetch
  * provider is mounted, falling back to the in-process global fetch (Node >= 22).
- * No API key required (Context7 allows keyless access with low rate limits).
+ * No API key required (Context7 allows keyless access with low rate limits);
+ * set `apiKey` in the plugin config to raise them.
  */
+import Schema from '@deepseek-ai/schemastery'
+
 export const name = 'dsh-context7'
 export const inject = ['tools']
+
+export const Config = Schema.object({
+  apiKey: Schema.string().default('').description('Context7 API key (ctx7sk...) from https://context7.com/dashboard — optional, raises rate limits'),
+})
 
 const BASE = 'https://context7.com/api'
 const TIMEOUT_MS = 45000
@@ -29,20 +36,25 @@ function paramsToQuery(params) {
     .join('&')
 }
 
-async function httpGet(ctx, path, params, exec) {
+async function httpGet(ctx, config, path, params, exec) {
   const url = `${BASE}${path}?${paramsToQuery(params || {})}`
-  // Preferred: the configured web seam (provider-aware fetching). Absent or
-  // provider-less (throws), fall back to the in-process global fetch.
-  const web = ctx.get('web')
-  if (web !== undefined) {
-    try {
-      const res = await web.fetch({ url }, exec.signal)
-      return { ok: res.statusCode >= 200 && res.statusCode < 300, status: res.statusCode, text: (res.body && res.body.content) || '' }
-    } catch (err) { /* fall through */ }
+  const headers = {}
+  if (config && config.apiKey) headers.authorization = 'Bearer ' + config.apiKey
+  // Preferred: the configured web seam (provider-aware fetching) — but it
+  // cannot carry the Authorization header, so when an apiKey is set we go
+  // straight to the in-process global fetch.
+  if (!headers.authorization) {
+    const web = ctx.get('web')
+    if (web !== undefined) {
+      try {
+        const res = await web.fetch({ url }, exec.signal)
+        return { ok: res.statusCode >= 200 && res.statusCode < 300, status: res.statusCode, text: (res.body && res.body.content) || '' }
+      } catch (err) { /* fall through */ }
+    }
   }
   const signals = [AbortSignal.timeout(TIMEOUT_MS)]
   if (exec.signal) signals.push(exec.signal)
-  const res = await fetch(url, { signal: AbortSignal.any(signals) })
+  const res = await fetch(url, { headers, signal: AbortSignal.any(signals) })
   return { ok: res.ok, status: res.status, text: await res.text() }
 }
 
@@ -63,8 +75,8 @@ function errorMessage(text) {
   }
 }
 
-async function request(ctx, path, params, exec) {
-  const res = await httpGet(ctx, path, params, exec)
+async function request(ctx, config, path, params, exec) {
+  const res = await httpGet(ctx, config, path, params, exec)
   if (!res.ok) {
     const msg = errorMessage(res.text)
     if (res.status === 301) {
@@ -77,9 +89,9 @@ async function request(ctx, path, params, exec) {
   return parseJson(res.text)
 }
 
-async function resolveLibrary(ctx, library, query, exec) {
+async function resolveLibrary(ctx, config, library, query, exec) {
   if (typeof library === 'string' && library.startsWith('/')) return library
-  const data = await request(ctx, '/v2/libs/search', { libraryName: library, query }, exec)
+  const data = await request(ctx, config, '/v2/libs/search', { libraryName: library, query }, exec)
   const results = Array.isArray(data.results) ? data.results : []
   const pick = results.find((r) => r.state === 'finalized') || results[0]
   if (!pick) throw new Error('context7: no library found matching "' + library + '". Use context7_search to find the exact name.')
@@ -131,7 +143,7 @@ function formatDocs(libraryId, query, data) {
   return md.join('\n')
 }
 
-function makeSearchTool(ctx) {
+function makeSearchTool(ctx, config) {
   return {
     name: 'context7_search',
     description: 'Search Context7 (context7.com) for software libraries with up-to-date indexed documentation. Returns ranked library matches with their Context7 library IDs (e.g. /vercel/next.js). Use this before context7_get_docs when you do not know the exact library ID, or to discover alternatives.',
@@ -194,7 +206,7 @@ function makeSearchTool(ctx) {
     },
     timeoutMs: 30000,
     async execute(args, exec) {
-      const data = await request(ctx, '/v2/libs/search', { libraryName: args.libraryName, query: args.query, fast: args.fast ? 'true' : undefined }, exec)
+      const data = await request(ctx, config, '/v2/libs/search', { libraryName: args.libraryName, query: args.query, fast: args.fast ? 'true' : undefined }, exec)
       const results = (Array.isArray(data.results) ? data.results : []).map((r) => ({
         id: String(r.id || ''),
         title: String(r.title || r.id || ''),
@@ -210,7 +222,7 @@ function makeSearchTool(ctx) {
   }
 }
 
-function makeDocsTool(ctx) {
+function makeDocsTool(ctx, config) {
   return {
     name: 'context7_get_docs',
     description: 'Fetch up-to-date, LLM-reranked documentation context for one software library from Context7 (context7.com). Pass a library ID from context7_search (e.g. "/vercel/next.js") or a bare library name (auto-resolved). Returns the most relevant code snippets and documentation for your question, plus library rules and source URLs. Use whenever you need current API details for a library.',
@@ -241,14 +253,14 @@ function makeDocsTool(ctx) {
     },
     timeoutMs: 60000,
     async execute(args, exec) {
-      const libraryId = await resolveLibrary(ctx, args.library, args.query, exec)
+      const libraryId = await resolveLibrary(ctx, config, args.library, args.query, exec)
       const params = {
         libraryId: args.version ? libraryId + '/' + args.version : libraryId,
         query: args.query,
         type: 'json',
         fast: args.fast ? 'true' : undefined,
       }
-      const data = await request(ctx, '/v2/context', params, exec)
+      const data = await request(ctx, config, '/v2/context', params, exec)
       const sources = []
       const codeSnippets = Array.isArray(data.codeSnippets) ? data.codeSnippets : []
       for (const s of codeSnippets) if (s.codeId) sources.push(String(s.codeId))
@@ -264,7 +276,8 @@ function makeDocsTool(ctx) {
   }
 }
 
-export function apply(ctx) {
+export function apply(ctx, config) {
+  const resolved = config || {}
   const sys = ctx.get('systemPrompt')
   if (sys !== undefined) {
     ctx.effect(() => sys.section({
@@ -273,6 +286,6 @@ export function apply(ctx) {
       text: 'Use the context7 tools (context7_search / context7_get_docs) to fetch up-to-date, version-specific documentation and code examples for software libraries from context7.com when you need current API details or patterns. Cite the returned source URLs.',
     }), 'dsh-context7: system prompt section')
   }
-  ctx.effect(() => ctx.tools.register(makeSearchTool(ctx)), 'dsh-context7: context7_search')
-  ctx.effect(() => ctx.tools.register(makeDocsTool(ctx)), 'dsh-context7: context7_get_docs')
+  ctx.effect(() => ctx.tools.register(makeSearchTool(ctx, resolved)), 'dsh-context7: context7_search')
+  ctx.effect(() => ctx.tools.register(makeDocsTool(ctx, resolved)), 'dsh-context7: context7_get_docs')
 }
