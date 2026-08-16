@@ -13,15 +13,19 @@ Context7 up-to-date library documentation for DSH.
 
 ## 配置 API key（可选）
 
-在 profile 的 `cordis.patch.yml`（如 `~/.dsh/profiles/web/cordis.patch.yml`）里给插件行填 `config.apiKey`：
+在插件自身目录的 `cordis.patch.yml`（安装后位于 `~/.dsh/profiles/web/node_modules/dsh-context7/cordis.patch.yml`）里给插件行填 `config.apiKey`：
 
 ```yaml
-- id: dsh-context7
-  config:
-    apiKey: ctx7sk_你的key
+- insert:
+    - id: dsh-context7
+      name: dsh-context7
+      config:
+        apiKey: ctx7sk_你的key
 ```
 
 保存后重启 DSH 生效。填了 key 后请求会带 `Authorization: Bearer` 头，获得更高限额。
+
+> ⚠️ 注意：`node_modules` 内是 pnpm 安装副本，执行 `dsh plugin --profile web update dsh-context7` 会覆盖此文件、丢失 key 配置；如需不被更新覆盖，可将同样的 `config.apiKey` 覆盖写到 profile 层 `~/.dsh/profiles/web/cordis.patch.yml`。
 
 ## 一键安装
 
