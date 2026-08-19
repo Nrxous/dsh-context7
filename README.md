@@ -29,7 +29,11 @@ Context7 up-to-date library documentation for DSH.
 
 ## 一键安装
 
-从 GitHub 安装（已验证）：
+```bash
+dsh plugin --profile web add dsh-context7
+```
+
+从 GitHub 安装：
 
 ```bash
 dsh plugin --profile web add github:Nrxous/dsh-context7
