@@ -20,7 +20,7 @@ Context7 up-to-date library documentation for DSH.
     - id: dsh-context7
       name: dsh-context7
       config:
-        apiKey: ctx7sk_你的key
+        apiKey: "ctx7sk-..."
 ```
 
 保存后重启 DSH 生效。填了 key 后请求会带 `Authorization: Bearer` 头，获得更高限额。
