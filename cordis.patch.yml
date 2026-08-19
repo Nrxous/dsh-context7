@@ -3,10 +3,10 @@
 # `dsh plugin --profile <name> add dsh-context7` registers the dependency and
 # auto-appends this bundle.
 #
-# 插件自身配置（apiKey）填写处：到 https://context7.com/dashboard 申请
-# ctx7sk 开头的 key 后填入下方 config.apiKey，重启 DSH 生效；留空使用免 key 低限额访问。
+# Plugin config (e.g. apiKey) is set in the profile patch layer
+# (~/.dsh/profiles/<name>/cordis.patch.yml), which is applied after every
+# bundle layer and survives plugin updates.
 - insert:
     - id: dsh-context7
       name: dsh-context7
-      config:
-        apiKey: ""
+      config: {}

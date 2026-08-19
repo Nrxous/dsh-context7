@@ -1,57 +1,55 @@
 # dsh-context7
 
-Context7 up-to-date library documentation for DSH.
+Up-to-date library documentation for DeepSeek Harness, powered by [Context7](https://context7.com).
 
-给 DSH 接入 [Context7](https://context7.com) 的官方 Public API v2，让模型随时获取最新、版本精确的库文档与代码示例。纯 Host 插件，注册两个模型工具：
+This host-only plugin connects DSH to the official Context7 Public API v2, so your agent can always fetch current, version-pinned documentation and code examples for software libraries. It registers two model tools:
 
-| 工具 | 用途 |
+| Tool | Purpose |
 | --- | --- |
-| `context7_search` | 按库名搜索（可带自然语言问题做 LLM 排序），返回匹配库及其 Context7 库 ID（如 `/vercel/next.js`） |
-| `context7_get_docs` | 按库 ID（或裸库名，自动解析）＋自然语言问题，拉取 LLM 重排序的最新文档：代码示例、文档片段、库规则与源 URL；支持 `version` 固定版本（如 `v15.1.8`） |
+| `context7_search` | Search libraries by name (optionally with a natural-language question for LLM ranking). Returns matches with their Context7 library IDs (e.g. `/vercel/next.js`). |
+| `context7_get_docs` | Fetch LLM-reranked documentation for one library by ID (or bare name, auto-resolved) plus a natural-language question: code snippets, doc snippets, library rules and source URLs. Supports `version` pinning (e.g. `v15.1.8`) and a `fast` low-latency mode. |
 
-无需 API key（Context7 允许无 key 低限额访问；需要更高限额可到 [context7.com/dashboard](https://context7.com/dashboard) 申请 `ctx7sk` 开头的 key）。
+No API key is required — Context7 allows keyless access with low rate limits. For higher limits, get a `ctx7sk`-prefixed key from the [Context7 dashboard](https://context7.com/dashboard).
 
-## 配置 API key（可选）
+## Installing
 
-在插件自身目录的 `cordis.patch.yml`（安装后位于 `~/.dsh/profiles/web/node_modules/dsh-context7/cordis.patch.yml`）里给插件行填 `config.apiKey`：
-
-```yaml
-- insert:
-    - id: dsh-context7
-      name: dsh-context7
-      config:
-        apiKey: "ctx7sk-..."
-```
-
-保存后重启 DSH 生效。填了 key 后请求会带 `Authorization: Bearer` 头，获得更高限额。
-
-> ⚠️ 注意：`node_modules` 内是 pnpm 安装副本，执行 `dsh plugin --profile web update dsh-context7` 会覆盖此文件、丢失 key 配置；如需不被更新覆盖，可将同样的 `config.apiKey` 覆盖写到 profile 层 `~/.dsh/profiles/web/cordis.patch.yml`。
-
-## 一键安装
+From npm (published):
 
 ```bash
 dsh plugin --profile web add dsh-context7
 ```
 
-从 GitHub 安装：
+From GitHub:
 
 ```bash
 dsh plugin --profile web add github:Nrxous/dsh-context7
 ```
 
-安装后重启 DSH 即生效；工具会在模型需要最新库文档时被自动调用，也可直接提问触发。
+Restart DSH after installing. The tools are called automatically whenever the model needs current library docs, or you can trigger them by asking directly.
 
-## 本地开发
+## Configuring the API key (optional)
 
-纯 JS 插件（无构建步骤），`main: src/index.js`，运行时依赖 `schemastery`（宿主提供）。
+Set `config.apiKey` in your **profile patch layer** — `~/.dsh/profiles/<name>/cordis.patch.yml` — which is applied after every bundle layer and survives plugin updates:
 
-```bash
-# 热装配到 web profile（免重启）
-dev_install_package <本目录>
-# 或注入器环境内
-dev_inject_plugin <本目录>
+```yaml
+- id: dsh-context7
+  config:
+    apiKey: ctx7sk_your-key-here
 ```
 
-## 协议
+Save and restart DSH. With a key set, requests carry an `Authorization: Bearer` header for higher rate limits. Without one, the plugin keeps working at keyless limits.
+
+## Development
+
+Pure JS plugin, no build step — `main: src/index.js`, runtime dependency `@deepseek-ai/schemastery` (provided by the host).
+
+```bash
+# Hot-mount into the web profile (no restart)
+dev_install_package <this-directory>
+# or inside the injector environment
+dev_inject_plugin <this-directory>
+```
+
+## License
 
 Apache-2.0

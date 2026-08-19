@@ -1,6 +1,6 @@
 {
   "name": "dsh-context7",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Context7 up-to-date library documentation for DSH: context7_search / context7_get_docs model tools backed by the Context7 Public API v2 (context7.com).",
   "private": false,
   "type": "module",
@@ -19,9 +19,9 @@
     "node": ">=22.0.0"
   },
   "peerDependencies": {
-    "@deepseek-ai/dsh-tools": ">=0.0.1-rc <2",
-    "@deepseek-ai/schemastery": "^3.18.0",
-    "cordis": ">=4.0.0-rc <5"
+    "@deepseek-ai/dsh-tools": ">=0.1.0-rc.7 <2",
+    "@deepseek-ai/schemastery": "^3.18.1",
+    "cordis": ">=4.0.0-rc.8 <5"
   },
   "dsh": {
     "bundle": {
